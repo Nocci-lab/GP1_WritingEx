@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Day 53 準１級ライティング強化／並べ替え問題</title>
+
+<style>
+body{
+  font-family:"Hiragino Maru Gothic ProN",sans-serif;
+  background:#fff9e6;
+  text-align:center;
+  padding:20px;
+}
+.frame{
+  border:3px solid #b6d957;
+  background:#fff;
+  padding:20px;
+  max-width:980px;
+  margin:auto;
+  border-radius:12px;
+}
+.qnum{font-size:24px;font-weight:bold;}
+.grammar{
+  font-size:18px;
+  color:#2b6cb0;
+  margin:6px 0;
+  font-weight:bold;
+}
+.jp{
+  font-size:15px;
+  color:#666;
+  margin-bottom:12px;
+}
+.row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(90px,1fr));
+  gap:10px;
+  margin:14px 0;
+}
+.slot{
+  height:60px;
+  border:2px dashed #bbb;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.card{
+  background:#e6f5e6;
+  padding:8px 12px;
+  border-radius:8px;
+  box-shadow:2px 2px 6px rgba(0,0,0,.25);
+  cursor:pointer;
+  user-select:none;
+  font-size:16px;
+  font-weight:bold;
+}
+button{
+  padding:8px 18px;
+  font-size:16px;
+  margin:6px;
+}
+#message{
+  font-size:20px;
+  height:28px;
+  font-weight:bold;
+}
+#progress{
+  margin-bottom:10px;
+  font-size:16px;
+  color:#444;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Day 53 準１級ライティング強化／並べ替え問題</h2>
+
+<div class="frame">
+
+  <div id="progress">
+    全 <b id="totalQ"></b> 問あります
+  </div>
+
+  <div class="qnum" id="qnum"></div>
+  <div class="grammar" id="grammar"></div>
+  <div class="jp" id="jp"></div>
+
+  <div class="row" id="answerRow"></div>
+  <div class="row" id="cardRow"></div>
+
+  <button onclick="checkAnswer()">Check</button>
+  <button onclick="shuffle()">Shuffle</button>
+  <button id="nextBtn" onclick="nextQ()" style="display:none">NEXT ▶</button>
+  <button onclick="makePDF()">📄 PDF</button>
+
+  <div id="message"></div>
+</div>
+
+<canvas id="confetti" style="position:fixed;top:0;left:0;pointer-events:none;"></canvas>
+
+<script>
+const data = [
+{
+ grammar:"目的を表す不定詞",
+ en:["Schools","should","ban","students","from","having","part-time","jobs","to","help","them","focus","on","their","studies","."],
+ jp:"学校は、生徒が勉強に集中できるようにするために、アルバイトをすることを禁止すべきだ。"
+},
+{
+ grammar:"文中の疑問詞",
+ en:["School","authorities","should","figure","out","why","some","students","skip","classes","and","take","appropriate","measures","to","address","the","issue","."],
+ jp:"学校当局は、なぜ一部の生徒が授業を欠席するのかを明らかにし、その問題に対処するための適切な対策を講じるべきだ。"
+},
+{
+ grammar:"動名詞を主語に",
+ en:["Subsidizing","not","only","government","sectors","but","also","private","businesses","will","result","in","significant","economic","growth","."],
+ jp:"政府部門だけでなく民間企業にも補助金を出すことは、著しい経済成長をもたらすだろう。"
+},
+{
+ grammar:"SVOC",
+ en:["Governments","should","encourage","elderly","people","to","engage","in","new","activities","so","that","they","remain","active","members","of","society","."],
+ jp:"政府は、高齢者が社会の一員として積極的に関わり続けられるように、新しい活動に参加することを促すべきだ。"
+},
+{
+ grammar:"関係代名詞",
+ en:["Human","activities",",","which","usually","involve","the","emission","of","carbon","dioxide",",","contribute","to","global","warming","."],
+ jp:"「通常、二酸化炭素の排出を伴う人間の活動」は、地球温暖化の原因となっている。"
+},
+{
+ grammar:"SVOC",
+ en:["Many","families","in","developing","countries","expect","their","governments","to","work","out","ways","to","improve","their","living","conditions","."],
+ jp:"発展途上国の多くの家庭は、生活環境を改善する方法を政府が見つけ出してくれることを期待している。"
+},
+{
+ grammar:"形式主語 it",
+ en:["It","is","becoming","increasingly","urgent","for","governments","to","come","up","with","solutions","to","distribute","wealth","more","equally","."],
+ jp:"富をより公平に分配するための解決策を考え出すことが、政府にとってますます緊急の課題となっている。"
+},
+{
+ grammar:"that節で主語の内容を表す",
+ en:["It","is","becoming","a","serious","issue","that","many","students","struggle","to","cope","with","the","stress","caused","by","exams","."],
+ jp:"多くの学生が試験によって生じるストレスにうまく対処できずにいることが、深刻な問題になりつつある。"
+},
+{
+ grammar:"(V) (O) (C)",
+ en:["The","government","should","make","greater","efforts","to","encourage","companies","to","cut","down","on","carbon","dioxide","emissions","."],
+ jp:"政府は、企業が二酸化炭素の排出量を削減するよう促すために、より一層の努力をすべきだ。"
+},
+{
+ grammar:"関係副詞",
+ en:["Big","international","events","where","many","people","from","all","over","the","world","turn","out","sometimes","cause","cultural","problems","."],
+ jp:"世界中から多くの人々が集まる大規模な国際イベントは、ときに文化的な問題を引き起こすことがある。"
+},
+{
+ grammar:"対比",
+ en:["Many","foreigners","live","in","Japan","nowadays",",","but","some","have","a","hard","time","adapting","to","the","environment","."],
+ jp:"現在、日本には多くの外国人が住んでいるが、環境に適応するのに苦労している人もいる。"
+},
+{
+ grammar:"形式主語 it",
+ en:["It","is","becoming","harder","for","some","young","adults","to","stick","to","one","job","due","to","stress","."],
+ jp:"ストレスのために、一つの仕事を続けることが一部の若者にとってますます難しくなってきている。"
+},
+{
+ grammar:"形式主語 it",
+ en:["It","is","becoming","increasingly","urgent","for","some","owners","to","tear","down","old","buildings","before","they","collapse","in","earthquakes","."],
+ jp:"老朽化した建物が地震で倒壊する前に取り壊すことが、一部の所有者にとってますます緊急の課題となっている。"
+},
+{
+ grammar:"目的を表す不定詞",
+ en:["All","citizens","should","chip","in","to","help","recover","the","country","damaged","by","the","earthquake","."],
+ jp:"すべての国民は、地震によって被害を受けた国の復興のために、力を合わせて協力すべきだ。"
+},
+{
+ grammar:"形式主語 it",
+ en:["It","is","becoming","increasingly","difficult","for","people","to","count","on","the","government","when","they","lose","jobs","during","recessions","."],
+ jp:"不況の時期に失業した場合、政府を頼ることが人々にとってますます難しくなってきている。"
+},
+{
+ grammar:"関係代名詞",
+ en:["The","government","should","establish","an","organization","to","support","young","people","who","have","dropped","out","of","society","."],
+ jp:"政府は、社会から離脱した若者を支援する組織を立ち上げるべきだ。"
+}
+];
+
+let cur=0, dragged=null;
+
+function loadQ(){
+  message.textContent="";
+  nextBtn.style.display="none";
+  const q=data[cur];
+  qnum.textContent="Q"+(cur+1);
+  grammar.textContent=q.grammar;
+  jp.textContent=q.jp;
+  answerRow.innerHTML="";
+  cardRow.innerHTML="";
+  q.en.forEach((w,i)=>{
+    answerRow.appendChild(makeSlot());
+    cardRow.appendChild(makeSlot(w,i));
+  });
+  shuffle();
+}
+
+function makeSlot(word="",home=null){
+  const s=document.createElement("div");
+  s.className="slot";
+  s.ondragover=e=>e.preventDefault();
+  s.ondrop=()=>{ if(dragged && !s.firstChild) s.appendChild(dragged); };
+  if(word){
+    const c=document.createElement("div");
+    c.className="card";
+    c.textContent=word;
+    c.dataset.home=home;
+    c.draggable=true;
+    c.onclick=()=>tapMove(c);
+    c.ondragstart=()=>dragged=c;
+    s.appendChild(c);
+  }
+  s.onclick=()=>{
+    if(s.parentElement.id==="answerRow" && s.firstChild){
+      cardRow.children[s.firstChild.dataset.home].appendChild(s.firstChild);
+    }
+  };
+  return s;
+}
+
+function tapMove(card){
+  const empty=[...answerRow.children].find(s=>!s.firstChild);
+  if(empty) empty.appendChild(card);
+}
+
+function shuffle(){
+  const cards=[...document.querySelectorAll(".card")];
+  cardRow.querySelectorAll(".slot").forEach(s=>s.innerHTML="");
+  cards.sort(()=>Math.random()-.5)
+       .forEach((c,i)=>cardRow.children[i].appendChild(c));
+}
+
+function checkAnswer(){
+  const ans=[...answerRow.children].map(s=>s.firstChild?.textContent||"");
+  if(JSON.stringify(ans)===JSON.stringify(data[cur].en)){
+    message.textContent="Correct! ✅";
+    speak();
+    nextBtn.style.display="inline-block";
+  }else{
+    message.textContent="Try again ❌";
+  }
+}
+
+function speak(){
+  const u=new SpeechSynthesisUtterance(data[cur].en.join(" "));
+  u.lang="en-US";
+  u.rate=0.75; // ← Google US ゆっくり75
+  speechSynthesis.speak(u);
+}
+
+function nextQ(){
+  cur++;
+  cur===data.length ? finish() : loadQ();
+}
+
+function finish(){
+  message.textContent="全部完成！Perfect!! 🎉";
+  launchConfetti();
+}
+
+function launchConfetti(){
+  const canvas = document.getElementById("confetti");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const pieces = Array.from({length:120}, () => ({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height - canvas.height,
+    r: Math.random()*6+4,
+    c: `hsl(${Math.random()*360},80%,60%)`,
+    s: Math.random()*3+2
+  }));
+
+  let t = 0;
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      ctx.fillStyle=p.c;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y+=p.s,p.r,0,Math.PI*2);
+      ctx.fill();
+    });
+    if(t++ < 180) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  }
+  draw();
+}
+
+function shuffleArray(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function makePDF(){
+  const w = window.open("");
+
+  /* ========= 問題ページ ========= */
+  w.document.write(`
+  <html>
+  <head>
+    <style>
+      body{
+        font-family:"Hiragino Maru Gothic ProN";
+        padding:24px;
+      }
+      h2{text-align:center;}
+      .q{
+        margin-bottom:22px;
+        page-break-inside: avoid;
+      }
+      .jp{color:#555;}
+      .words{font-size:13px;margin:6px 0;}
+      .line{
+        border-bottom:1px solid #000;
+        height:22px;
+        margin-bottom:4px;
+      }
+      .page-break{
+        page-break-before: always;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>準１級 Day53 Writing 並べ替え練習</h2>
+    Name: ____________　Date: ____________
+  `);
+
+  data.forEach((q,i)=>{
+    const shuffled = shuffleArray(q.en);
+    w.document.write(`
+      <div class="q">
+        <b>Q${i+1}【${q.grammar}】</b><br>
+        （${q.jp}）<br>
+        <div class="words">${shuffled.join(" / ")}</div>
+        <div class="line"></div>
+        <div class="line"></div>
+      </div>
+    `);
+  });
+
+  /* ========= 答えページ（別ページ） ========= */
+  w.document.write(`
+    <div class="page-break"></div>
+    <h2>Answer</h2>
+  `);
+
+  data.forEach((q,i)=>{
+    w.document.write(`
+      <div class="q">
+        <b>Q${i+1}</b><br>
+        ${q.en.join(" ")}
+      </div>
+    `);
+  });
+
+  w.document.write(`
+  </body>
+  </html>
+  `);
+
+  w.document.close();
+  w.print();
+}
+
+loadQ();
+totalQ.textContent = data.length;
+</script>
+</body>
+</html>
